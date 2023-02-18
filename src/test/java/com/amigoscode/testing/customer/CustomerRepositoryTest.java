@@ -3,13 +3,17 @@ package com.amigoscode.testing.customer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-@DataJpaTest
+@DataJpaTest(properties = {
+        "spring.jpa.properties.javax.persistence.validation.mode=none"
+})
 class CustomerRepositoryTest {
 
     @Autowired
@@ -18,8 +22,32 @@ class CustomerRepositoryTest {
     @Test
     void isShouldSelectCustomerByPhoneNumber() {
         //Given
+        UUID id = UUID.randomUUID();
+        String phoneNumber = "0000";
+        Customer customer = new Customer(id, "Abel", phoneNumber);
+
         //When
+        underTest.save(customer);
+
         //Then
+        Optional<Customer> optionalCustomer = underTest.selectCustomerByPhoneNumber(phoneNumber);
+        assertThat(optionalCustomer)
+                .isPresent()
+                .hasValueSatisfying(c -> {
+                    assertThat(c).isEqualToComparingFieldByField(customer);
+                });
+    }
+
+    @Test
+    void isNotShouldSelectCustomerByPhoneNumberWhenNumberDoesNotExist() {
+        //Given
+        String phoneNumber = "0000";
+
+        //When
+        Optional<Customer> optionalCustomer = underTest.selectCustomerByPhoneNumber(phoneNumber);
+
+        //Then
+        assertThat(optionalCustomer).isNotPresent();
     }
 
     @Test
@@ -41,4 +69,34 @@ class CustomerRepositoryTest {
                     assertThat(c).isEqualToComparingFieldByField(customer);
                 });
     }
+
+    @Test
+    void itShouldNotSaveCustomerWhenNameIsNull() {
+        // Given
+        UUID id = UUID.randomUUID();
+        Customer customer = new Customer(id, null, "0000");
+
+        // When
+        // Then
+        assertThatThrownBy(() -> underTest.save(customer))
+                .hasMessageContaining("not-null property references a null or transient value : com.amigoscode.testing.customer.Customer.name")
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+    }
+
+    @Test
+    void itShouldNotSaveCustomerWhenPhoneNumberIsNull() {
+        // Given
+        UUID id = UUID.randomUUID();
+        Customer customer = new Customer(id, "Alex", null);
+
+        // When
+        // Then
+        assertThatThrownBy(() -> underTest.save(customer))
+                .hasMessageContaining("not-null property references a null or transient value : com.amigoscode.testing.customer.Customer.phoneNumber")
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+    }
+
+
 }

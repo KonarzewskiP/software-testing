@@ -14,4 +14,6 @@ public interface CustomerRepository extends CrudRepository<Customer, UUID> {
             "from customer where phone_number = :phone_number ",
              nativeQuery = true)
     Optional<Customer> selectCustomerByPhoneNumber(@Param("phone_number") String phoneNumber);
+
+
 }
