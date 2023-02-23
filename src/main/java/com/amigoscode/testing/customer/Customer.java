@@ -9,7 +9,8 @@ import java.util.UUID;
 
 @Entity
 //It will ignore 'id' field from the client but It will send it to the client
-@JsonIgnoreProperties(value = {"id"}, allowGetters = true)
+//@JsonIgnoreProperties(value = {"id"}, allowGetters = true)
+@JsonIgnoreProperties(allowGetters = true)
 public class Customer {
     @Id
     private UUID id;
@@ -49,5 +50,14 @@ public class Customer {
 
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
+    }
+
+    @Override
+    public String toString() {
+        return "Customer{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", phoneNumber='" + phoneNumber + '\'' +
+                '}';
     }
 }
