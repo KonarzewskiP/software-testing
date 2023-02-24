@@ -1,5 +1,6 @@
 package com.amigoscode.testing.customer;
 
+import com.amigoscode.testing.utils.PhoneNumberValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -27,6 +28,8 @@ class CustomerRegistrationServiceTest {
 
     @Mock
     private CustomerRepository customerRepository;
+    @Mock
+    private PhoneNumberValidator phoneNumberValidator;
 
     @Captor
     private ArgumentCaptor<Customer> customerArgumentCaptor;
@@ -43,8 +46,12 @@ class CustomerRegistrationServiceTest {
         Customer customer = new Customer(UUID.randomUUID(), "Zoe", phoneNumber);
         CustomerRegistrationRequest request = new CustomerRegistrationRequest(customer);
 
+        // ... No customer with phone number passed
         given(customerRepository.selectCustomerByPhoneNumber(phoneNumber))
                 .willReturn(Optional.empty());
+
+        // ... Valid phone number
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
 
         //When
         underTest.registerNewCustomer(request);
@@ -66,6 +73,9 @@ class CustomerRegistrationServiceTest {
 
         given(customerRepository.selectCustomerByPhoneNumber(phoneNumber))
                 .willReturn(Optional.empty());
+
+        // ... Valid phone number
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
 
         //When
         underTest.registerNewCustomer(request);
@@ -90,11 +100,35 @@ class CustomerRegistrationServiceTest {
         given(customerRepository.selectCustomerByPhoneNumber(phoneNumber))
                 .willReturn(Optional.of(customer));
 
+        // ... Valid phone number
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
+
         //When
         underTest.registerNewCustomer(request);
 
         //Then
         then(customerRepository).should(never()).save(any());
+    }
+
+    @Test
+    void isShouldNotSaveCustomerWhenPhoneNumberIsInvalid() {
+        //Given
+        String phoneNumber = "12345";
+        UUID id = UUID.randomUUID();
+        Customer customer = new Customer(id, "Zoe", phoneNumber);
+        CustomerRegistrationRequest request = new CustomerRegistrationRequest(customer);
+
+        // ... Valid phone number
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(false);
+
+        //When
+        //Then
+        assertThatThrownBy(() -> underTest.registerNewCustomer(request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Phone number " + phoneNumber + " is not valid");
+
+        //Finally
+        then(customerRepository).shouldHaveNoInteractions();
     }
 
     @Test
@@ -109,6 +143,9 @@ class CustomerRegistrationServiceTest {
 
         given(customerRepository.selectCustomerByPhoneNumber(phoneNumber))
                 .willReturn(Optional.of(customer));
+
+        // ... Valid phone number
+        given(phoneNumberValidator.test(phoneNumber)).willReturn(true);
 
         //When
         //Then
